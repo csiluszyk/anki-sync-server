@@ -387,6 +387,21 @@ class CollectionHandler(RestHandlerBase):
         if req.data.has_key('tags'):
             note.setTagsFromStr(req.data['tags'])
 
+        if req.data.has_key('audio'):
+            import urllib
+            dst = os.path.normpath(os.path.join(
+                col.media.dir(), req.data['dst']))
+            audio = urllib.URLopener()
+            audio.retrieve(req.data['audio'], dst)
+            our_last_usn = col.media.lastUsn()
+            col.media.setLastUsn(our_last_usn + 1)
+            csum = col.media._checksum(dst)
+            mtime = col.media._mtime(dst)
+            col.media.db.executemany(
+                'insert or replace into media values (?,?,?,?)',
+                [(req.data['dst'], csum, mtime, 0)],
+            )
+
         col.addNote(note)
 
     def list_tags(self, col, req):
@@ -483,6 +498,13 @@ class CollectionHandler(RestHandlerBase):
             cards = [{'id': id} for id in ids]
 
         return cards
+
+    def get_notes(self, col, req):
+        from AnkiServer.find import Finder
+        query = req.data.get('query', '')
+        finder = Finder(col)
+        ids = finder.getNotes(query)
+        return [{'id': id} for id in ids]
 
     def latest_cards(self, col, req):
         # TODO: use SQLAlchemy objects to do this

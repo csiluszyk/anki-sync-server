@@ -31,3 +31,7 @@ class Finder(anki.find.Finder):
             sql += ' OFFSET ' + str(self.offset)
         return sql
 
+    def getNotes(self, query):
+        sql = "select n.id from notes n where flds like '%s%%'" % query
+        return self.col.db.list(sql)
+
